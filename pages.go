@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
+	"os"
 
-	"github.com/google/uuid"
 	"github.com/pterm/pterm"
 )
 
@@ -13,28 +13,24 @@ func askPages(config *Config) error {
 	for _, page := range config.Pages {
 		options = append(options, page.Name)
 	}
-	options = append(options, "Add Page", "Continue")
-	selectedOption, err := pterm.DefaultInteractiveSelect.WithOptions(options).Show()
+	options = append(options, "Add Page", "Continue", "Exit")
+	selectedOption, err := pterm.DefaultInteractiveSelect.WithOptions(options).WithFilter(false).Show()
 	if err != nil {
 		fmt.Printf("Prompt failed %v\n", err)
 		return err
 	}
 
 	if selectedOption == "Add Page" {
-		newPageName, err := pterm.DefaultInteractiveTextInput.Show()
-		if err != nil {
-			fmt.Printf("Prompt failed %v\n", err)
-			return err
-		}
-		newPage := Page{
-			ID:         uuid.New().String(),
-			Name:       newPageName,
-			Components: make(map[string]Component),
-		}
-		config.Pages[newPage.Name] = newPage
-		askPages(config)
+		addPage(config)
 	} else if selectedOption == "Continue" {
+		if len(config.Pages) == 0 {
+			pterm.Warning.Println("No pages found. Please add a page.")
+			askPages(config)
+		}
 		return nil
+	} else if selectedOption == "Exit" {
+		pterm.Println(pterm.Red("Exiting..."))
+		os.Exit(0)
 	} else {
 		askComponents(config, selectedOption)
 	}

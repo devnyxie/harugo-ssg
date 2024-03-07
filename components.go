@@ -1,68 +1,51 @@
 package main
 
 import (
-	"fmt"
-
-	"github.com/manifoldco/promptui"
+	"github.com/pterm/pterm"
 )
 
 func askComponents(config *Config, selectedPageName string) error {
 	var err error
-	// --- all components ---
 	var components []Component
+
+	// Define the default options indices
 	components, err = findAllComponents()
-	components = append(components, Component{Name: "Continue"})
 	if err != nil {
 		panic(err)
 	}
-
+	componentNames := []string{}
+	selectedComponentNames := []string{}
 	for i := range components {
 		name := components[i].Name
 		selected := IsSelectedFunc(config, selectedPageName, name)
+		println(selected)
 		if selected {
-			fmt.Println("SETTING IsSelected TO TRUE")
-			components[i].IsSelected = true
+			selectedComponentNames = append(selectedComponentNames, name)
 		}
+		componentNames = append(componentNames, name)
 	}
 
-	templates := &promptui.SelectTemplates{
-		Label:    "{{ .  }}?",
-		Active:   `{{ .Name | green }}`,
-		Inactive: `{{ if .IsSelected }}{{ .Name | yellow }}{{ else }}{{ .Name | faint }}{{ end }}`,
-		Selected: "{{ .Name | faint }}",
-		Details: `
---------- Component ----------
-{{ "Name:" | faint }}    {{ .Name }}`,
-	}
-
-	prompt := promptui.Select{
-		Label:        "Select components you would like to have on " + selectedPageName + " page",
-		Items:        components,
-		Templates:    templates,
-		HideSelected: true,
-	}
-	i, _, err := prompt.Run()
+	printer := pterm.DefaultInteractiveMultiselect.
+		WithOptions(componentNames).
+		WithDefaultOptions(selectedComponentNames).
+		WithFilter(false)
+	selectedOptions, err := printer.Show()
 
 	if err != nil {
 		panic(err)
 	}
 
-	selectedComponent := components[i]
-
-	if selectedComponent.Name == "Continue" {
-		askPages(config)
-	} else {
-		//to-do: add component to the page
-
-		if IsSelectedFunc(config, selectedPageName, selectedComponent.Name) {
-			fmt.Println("Component already exists in the page")
-
-			deleteComponent(config, config.Pages[selectedPageName], selectedComponent.Name)
-		} else {
-			addComponent(config, config.Pages[selectedPageName], selectedComponent.Name)
-		}
-		askComponents(config, selectedPageName)
+	// Reset chosen components
+	page := config.Pages[selectedPageName]
+	page.Components = make(map[string]Component)
+	config.Pages[selectedPageName] = page
+	// Add selected components to the page
+	for i := range selectedOptions {
+		var selectedOption string = selectedOptions[i]
+		addComponent(config, config.Pages[selectedPageName], selectedOption)
 	}
+
+	askPages(config)
 
 	return nil
 }

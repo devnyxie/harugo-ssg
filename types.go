@@ -1,13 +1,13 @@
 package main
 
 type Component struct {
-	ID         string
+	Index      int
 	Name       string
 	IsSelected bool
 }
 
 type Page struct {
-	ID         string
+	Index      int
 	Name       string
 	Components map[string]Component
 }
