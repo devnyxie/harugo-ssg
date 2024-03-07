@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/google/uuid"
+	"github.com/pterm/pterm"
 )
 
 func IsSelectedFunc(config *Config, selectedPageName string, componentName string) bool {
@@ -13,26 +13,35 @@ func IsSelectedFunc(config *Config, selectedPageName string, componentName strin
 	return ok
 }
 
+func addPage(config *Config) {
+	newPageIndex := len(config.Pages) + 1
+	newPageName, _ := pterm.DefaultInteractiveTextInput.WithDefaultText("Name of the page").Show()
+	if newPageName == "" {
+		pterm.Println(pterm.Red("Page name cannot be empty"))
+		addPage(config)
+	}
+	newPage := Page{
+		Index:      newPageIndex,
+		Name:       newPageName,
+		Components: make(map[string]Component),
+	}
+	config.Pages[newPage.Name] = newPage
+	askPages(config)
+}
+
 func addComponent(config *Config, page Page, targetComponentName string) {
+	newComponentIndex := len(config.Pages[page.Name].Components) + 1
 	newComponent := Component{
-		ID:   uuid.New().String(),
-		Name: targetComponentName,
+		Index: newComponentIndex,
+		Name:  targetComponentName,
 	}
 	fmt.Println(newComponent.Name)
 	config.Pages[page.Name].Components[newComponent.Name] = newComponent
 }
 
-func deleteComponent(config *Config, page Page, targetComponentName string) {
-	delete(config.Pages[page.Name].Components, targetComponentName)
-}
-
 func findAllComponents() ([]Component, error) {
 	var dir string = "./components"
 	var components []Component
-	/*
-		filepath.Walk() call initiates the walk of the directory tree rooted at dir.
-		For each file or directory encountered during the walk, it calls the provided function.
-	*/
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -47,4 +56,22 @@ func findAllComponents() ([]Component, error) {
 	}
 
 	return components, nil
+}
+
+func findAllThemes() ([]string, error) {
+	var dir string = "./themes"
+	var themes []string
+	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() && path != dir {
+			themes = append(themes, info.Name())
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return themes, nil
 }
