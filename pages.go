@@ -7,17 +7,16 @@ import (
 	"github.com/pterm/pterm"
 )
 
-func askPages(config *Config) error {
+func askPages(config *Config) {
 	var options []string
-	var err error
 	for _, page := range config.Pages {
 		options = append(options, page.Name)
 	}
 	options = append(options, "Add Page", "Continue", "Exit")
-	selectedOption, err := pterm.DefaultInteractiveSelect.WithOptions(options).WithFilter(false).Show()
-	if err != nil {
-		fmt.Printf("Prompt failed %v\n", err)
-		return err
+	selectedOption, selectErr := pterm.DefaultInteractiveSelect.WithOptions(options).WithFilter(false).Show()
+	if selectErr != nil {
+		fmt.Printf("Prompt failed %v\n", selectErr)
+		os.Exit(1)
 	}
 
 	if selectedOption == "Add Page" {
@@ -27,12 +26,11 @@ func askPages(config *Config) error {
 			pterm.Warning.Println("No pages found. Please add a page.")
 			askPages(config)
 		}
-		return nil
+		return
 	} else if selectedOption == "Exit" {
 		pterm.Println(pterm.Red("Exiting..."))
 		os.Exit(0)
 	} else {
 		askComponents(config, selectedOption)
 	}
-	return nil
 }

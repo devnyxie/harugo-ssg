@@ -18,7 +18,6 @@ func askComponents(config *Config, selectedPageName string) error {
 	for i := range components {
 		name := components[i].Name
 		selected := IsSelectedFunc(config, selectedPageName, name)
-		println(selected)
 		if selected {
 			selectedComponentNames = append(selectedComponentNames, name)
 		}

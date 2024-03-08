@@ -75,3 +75,32 @@ func findAllThemes() ([]string, error) {
 	}
 	return themes, nil
 }
+
+func configToPtermTree(config *Config) pterm.TreeNode {
+	tree := pterm.TreeNode{
+		Text: config.ProjectName,
+		Children: []pterm.TreeNode{
+			{Text: fmt.Sprintf("Theme: %s", config.Theme)},
+		},
+	}
+
+	for pageName, page := range config.Pages {
+		pageNode := pterm.TreeNode{
+			Text: fmt.Sprintf("Page: %s", pageName),
+		}
+
+		for componentName, component := range page.Components {
+			componentNode := pterm.TreeNode{
+				Text: fmt.Sprintf("Component: %s", componentName),
+				Children: []pterm.TreeNode{
+					{Text: fmt.Sprintf("Name: %s", component.Name)},
+				},
+			}
+			pageNode.Children = append(pageNode.Children, componentNode)
+		}
+
+		tree.Children = append(tree.Children, pageNode)
+	}
+
+	return tree
+}

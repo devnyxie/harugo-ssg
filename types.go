@@ -13,6 +13,7 @@ type Page struct {
 }
 
 type Config struct {
-	Theme string
-	Pages map[string]Page
+	ProjectName string
+	Theme       string
+	Pages       map[string]Page
 }

@@ -1,11 +1,8 @@
-module harugo-ssg
+module harugo
 
 go 1.22.0
 
-require (
-	github.com/google/uuid v1.6.0
-	github.com/pterm/pterm v0.12.79
-)
+require github.com/pterm/pterm v0.12.79
 
 require (
 	atomicgo.dev/cursor v0.2.0 // indirect
