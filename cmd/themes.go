@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"github.com/pterm/pterm"
 )
 
-func askThemes(config *Config) {
+func AskThemes(config *Config) {
 	options, _ := findAllThemes()
 	selectedOption, err := pterm.DefaultInteractiveSelect.WithOptions(options).WithFilter(false).WithDefaultText("Select a theme").Show()
 	if err != nil {

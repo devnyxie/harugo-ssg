@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"github.com/pterm/pterm"
 )
 
-func askPages(config *Config) {
+func AskPages(config *Config) {
 	var options []string
 	for _, page := range config.Pages {
 		options = append(options, page.Name)
@@ -24,7 +24,7 @@ func askPages(config *Config) {
 	} else if selectedOption == "Continue" {
 		if len(config.Pages) == 0 {
 			pterm.Warning.Println("No pages found. Please add a page.")
-			askPages(config)
+			AskPages(config)
 		}
 		return
 	} else if selectedOption == "Exit" {

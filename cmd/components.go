@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"github.com/pterm/pterm"
@@ -44,7 +44,7 @@ func askComponents(config *Config, selectedPageName string) error {
 		addComponent(config, config.Pages[selectedPageName], selectedOption)
 	}
 
-	askPages(config)
+	AskPages(config)
 
 	return nil
 }

@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"fmt"
@@ -26,7 +26,7 @@ func addPage(config *Config) {
 		Components: make(map[string]Component),
 	}
 	config.Pages[newPage.Name] = newPage
-	askPages(config)
+	AskPages(config)
 }
 
 func addComponent(config *Config, page Page, targetComponentName string) {
@@ -80,6 +80,7 @@ func configToPtermTree(config *Config) pterm.TreeNode {
 	tree := pterm.TreeNode{
 		Text: config.ProjectName,
 		Children: []pterm.TreeNode{
+			{Text: fmt.Sprintf("Location: %s", config.ProjectLocation)},
 			{Text: fmt.Sprintf("Theme: %s", config.Theme)},
 		},
 	}
@@ -89,12 +90,9 @@ func configToPtermTree(config *Config) pterm.TreeNode {
 			Text: fmt.Sprintf("Page: %s", pageName),
 		}
 
-		for componentName, component := range page.Components {
+		for componentName := range page.Components {
 			componentNode := pterm.TreeNode{
 				Text: fmt.Sprintf("Component: %s", componentName),
-				Children: []pterm.TreeNode{
-					{Text: fmt.Sprintf("Name: %s", component.Name)},
-				},
 			}
 			pageNode.Children = append(pageNode.Children, componentNode)
 		}

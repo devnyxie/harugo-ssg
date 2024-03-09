@@ -4,6 +4,8 @@ go 1.22.0
 
 require github.com/pterm/pterm v0.12.79
 
+// replace harugo/cli => ./cli
+
 require (
 	atomicgo.dev/cursor v0.2.0 // indirect
 	atomicgo.dev/keyboard v0.2.9 // indirect

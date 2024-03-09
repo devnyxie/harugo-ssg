@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"os"
@@ -6,7 +6,7 @@ import (
 	"github.com/pterm/pterm"
 )
 
-func askConfirmation(config *Config) {
+func AskConfirmation(config *Config) {
 	// pterm.Println()
 	pterm.DefaultTree.WithRoot(configToPtermTree(config)).Render()
 	result, err := pterm.DefaultInteractiveConfirm.WithDefaultText("Confirm if this is the project you want").Show()
@@ -19,7 +19,7 @@ func askConfirmation(config *Config) {
 		return
 	} else {
 		pterm.Println(pterm.Red("Not confirmed."))
-		askPages(config)
+		AskPages(config)
 	}
 
 }

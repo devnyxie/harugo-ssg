@@ -1,4 +1,4 @@
-package main
+package cmd
 
 type Component struct {
 	Index      int
@@ -13,7 +13,8 @@ type Page struct {
 }
 
 type Config struct {
-	ProjectName string
-	Theme       string
-	Pages       map[string]Page
+	ProjectName     string
+	ProjectLocation string
+	Theme           string
+	Pages           map[string]Page
 }

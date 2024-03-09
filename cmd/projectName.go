@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"os"
@@ -6,7 +6,7 @@ import (
 	"github.com/pterm/pterm"
 )
 
-func askProjectName(config *Config) {
+func AskProjectName(config *Config) {
 	newPageName, promptErr := pterm.DefaultInteractiveTextInput.WithDefaultText("Name your project").Show()
 	if promptErr != nil {
 		pterm.Println(pterm.Red("An unexpected error occured"))
@@ -14,7 +14,7 @@ func askProjectName(config *Config) {
 	}
 	if newPageName == "" {
 		pterm.Println(pterm.Red("Project name cannot be empty"))
-		askProjectName(config)
+		AskProjectName(config)
 	} else {
 		config.ProjectName = newPageName
 	}
