@@ -1,29 +1,30 @@
 import { join } from 'path';
 import matter from 'gray-matter';
-import { readdirSync, readFileSync, statSync, mkdirSync } from 'fs';
+import fs from 'fs';
 
-const postsDirectory = join(process.cwd(), '_posts');
+const postsDirectory = join('_posts');
 
 // Ensure the directory exists, if not, create it
 try {
-  statSync(postsDirectory);
+  fs.statSync(postsDirectory);
 } catch (error) {
   if (error.code === 'ENOENT') {
     // Directory doesn't exist, create it
-    mkdirSync(postsDirectory, { recursive: true });
+    fs.mkdirSync(postsDirectory, { recursive: true });
   } else {
     throw error;
   }
 }
 
 export function getPostFileNames() {
-  return readdirSync(postsDirectory);
+  return fs.readdirSync(postsDirectory);
 }
 
-export function getPostByFileName(slug, fields) {
+export function getPostByFileName(slug) {
+  const fields = ['title', 'date', 'slug', 'coverImage', 'excerpt'];
   const realSlug = slug.replace(/\.md$/, '');
   const fullPath = join(postsDirectory, `${realSlug}.md`);
-  const fileContents = readFileSync(fullPath, 'utf8');
+  const fileContents = fs.readFileSync(fullPath, 'utf8');
   const { data, content } = matter(fileContents);
 
   const items = {};
@@ -45,10 +46,10 @@ export function getPostByFileName(slug, fields) {
   return items;
 }
 
-export function getAllPosts(fields) {
+export default function getAllPosts() {
   const slugs = getPostFileNames();
   const posts = slugs
-    .map((slug) => getPostByFileName(slug, fields))
+    .map((slug) => getPostByFileName(slug))
     .sort((post1, post2) => (post1.date > post2.date ? -1 : 1));
   return posts;
 }

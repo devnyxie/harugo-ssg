@@ -1,33 +1,26 @@
-package main
+package cmd
 
 import (
-	"fmt"
-
-	"harugo/cmd"
-
 	"github.com/pterm/pterm"
 )
 
-func main() {
+func StartCMD(config *Config) {
 	// Initial config
-	config := cmd.Config{
-		Theme: "",
-		Pages: make(map[string]cmd.Page),
-	}
+
 	// Init Full Screen PTERM area
 	area, _ := pterm.DefaultArea.WithFullscreen().Start()
 	// - Project Name -
-	cmd.AskProjectName(&config)
+	AskProjectName(config)
 	// - Project Pages -
-	cmd.AskPages(&config)
+	AskPages(config)
 	// - Project Theme -
-	cmd.AskThemes(&config)
+	AskThemes(config)
 	// - Project Location -
-	cmd.AskProjectLocation(&config)
+	AskProjectLocation(config)
 	// - Project Confirmation -
-	cmd.AskConfirmation(&config)
-	// - Overall config check -
-	fmt.Println(config)
+	AskConfirmation(config)
+	// - Project Creation -
+	InitializeProject(config)
 	// Terminate Full Screen PTERM area
 	area.Stop()
 }

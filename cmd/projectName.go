@@ -7,6 +7,9 @@ import (
 )
 
 func AskProjectName(config *Config) {
+	if config.ProjectName != "" {
+		return
+	}
 	newPageName, promptErr := pterm.DefaultInteractiveTextInput.WithDefaultText("Name your project").Show()
 	if promptErr != nil {
 		pterm.Println(pterm.Red("An unexpected error occured"))

@@ -14,7 +14,12 @@ func IsSelectedFunc(config *Config, selectedPageName string, componentName strin
 }
 
 func addPage(config *Config) {
-	newPageIndex := len(config.Pages) + 1
+	var newPageIndex int
+	if len(config.Pages) == 0 {
+		newPageIndex = 0
+	} else {
+		newPageIndex = len(config.Pages)
+	}
 	newPageName, _ := pterm.DefaultInteractiveTextInput.WithDefaultText("Name of the page").Show()
 	if newPageName == "" {
 		pterm.Println(pterm.Red("Page name cannot be empty"))
@@ -30,7 +35,12 @@ func addPage(config *Config) {
 }
 
 func addComponent(config *Config, page Page, targetComponentName string) {
-	newComponentIndex := len(config.Pages[page.Name].Components) + 1
+	var newComponentIndex int
+	if len(config.Pages[page.Name].Components) == 0 {
+		newComponentIndex = 0
+	} else {
+		newComponentIndex = len(config.Pages[page.Name].Components)
+	}
 	newComponent := Component{
 		Index: newComponentIndex,
 		Name:  targetComponentName,
@@ -40,7 +50,7 @@ func addComponent(config *Config, page Page, targetComponentName string) {
 }
 
 func findAllComponents() ([]Component, error) {
-	var dir string = "./components"
+	var dir string = "./foundation/components"
 	var components []Component
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -59,7 +69,7 @@ func findAllComponents() ([]Component, error) {
 }
 
 func findAllThemes() ([]string, error) {
-	var dir string = "./themes"
+	var dir string = "./foundation/themes"
 	var themes []string
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -87,12 +97,12 @@ func configToPtermTree(config *Config) pterm.TreeNode {
 
 	for pageName, page := range config.Pages {
 		pageNode := pterm.TreeNode{
-			Text: fmt.Sprintf("Page: %s", pageName),
+			Text: fmt.Sprintf("[%d] Page: %s", page.Index, pageName),
 		}
 
-		for componentName := range page.Components {
+		for componentName, component := range page.Components {
 			componentNode := pterm.TreeNode{
-				Text: fmt.Sprintf("Component: %s", componentName),
+				Text: fmt.Sprintf("[%d] Component: %s", component.Index, componentName),
 			}
 			pageNode.Children = append(pageNode.Children, componentNode)
 		}
@@ -101,4 +111,13 @@ func configToPtermTree(config *Config) pterm.TreeNode {
 	}
 
 	return tree
+}
+
+func stringExistsInSlice(target string, slice []string) bool {
+	for _, s := range slice {
+		if s == target {
+			return true
+		}
+	}
+	return false
 }

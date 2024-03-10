@@ -26,7 +26,6 @@ func AskPages(config *Config) {
 			pterm.Warning.Println("No pages found. Please add a page.")
 			AskPages(config)
 		}
-		return
 	} else if selectedOption == "Exit" {
 		pterm.Println(pterm.Red("Exiting..."))
 		os.Exit(0)

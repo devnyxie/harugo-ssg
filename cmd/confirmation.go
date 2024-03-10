@@ -19,7 +19,9 @@ func AskConfirmation(config *Config) {
 		return
 	} else {
 		pterm.Println(pterm.Red("Not confirmed."))
-		AskPages(config)
+		StartCMD(config)
+		return
+
 	}
 
 }
