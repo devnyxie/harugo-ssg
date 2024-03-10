@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 
 	"github.com/pterm/pterm"
 )
@@ -120,4 +122,41 @@ func stringExistsInSlice(target string, slice []string) bool {
 		}
 	}
 	return false
+}
+func sortMapByIndex(entity Entity) []string {
+	switch v := entity.(type) {
+	case map[string]Component:
+
+		keys := make([]string, 0, len(v))
+		for key := range v {
+			keys = append(keys, key)
+		}
+		sort.SliceStable(keys, func(i, j int) bool {
+			return v[keys[i]].Index < v[keys[j]].Index
+		})
+
+		return keys
+	case map[string]Page:
+		keys := make([]string, 0, len(v))
+		for key := range v {
+			keys = append(keys, key)
+		}
+		sort.SliceStable(keys, func(i, j int) bool {
+			return v[keys[i]].Index < v[keys[j]].Index
+		})
+		return keys
+
+	default:
+		fmt.Println("Unsupported type")
+		return nil
+	}
+}
+
+func removeFileExtension(filename string) string {
+	extension := filepath.Ext(filename)
+	return strings.TrimSuffix(filename, extension)
+}
+
+func extractFileExtension(filename string) string {
+	return filepath.Ext(filename)
 }

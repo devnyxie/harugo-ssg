@@ -9,8 +9,9 @@ import (
 
 func AskPages(config *Config) {
 	var options []string
-	for _, page := range config.Pages {
-		options = append(options, page.Name)
+	sortedPages := sortMapByIndex(config.Pages)
+	if sortedPages != nil {
+		options = append(options, sortedPages...)
 	}
 	options = append(options, "Add Page", "Continue", "Exit")
 	selectedOption, selectErr := pterm.DefaultInteractiveSelect.WithOptions(options).WithFilter(false).Show()

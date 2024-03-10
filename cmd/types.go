@@ -12,6 +12,8 @@ type Page struct {
 	Components map[string]Component
 }
 
+type Entity interface{}
+
 type Config struct {
 	ProjectName     string
 	ProjectLocation string

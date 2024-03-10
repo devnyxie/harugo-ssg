@@ -6,11 +6,10 @@ export default function Page(props) {
   return (
     <div>
       {/* CONTENT START */}
-      {/* CONTEND END */}
+      {/* CONTENT END */}
     </div>
   );
 }
 
 // STATIC PROPS START
-
 // STATIC PROPS END

@@ -18,43 +18,169 @@ func InitializeProject(config *Config) {
 	} else {
 		destDir = config.ProjectName
 	}
-	// --- Initialization ---
-	// 1. Copy nextjs-base to desired location & rename it to config.ProjectName.
-	// --- Pages & their components ---
-	// 2. Create files for each page in project/pages
-	//    2.1. Get "common/page.jsx", rename it and use it.
-	//    2.2. For each Page.Component:
-	//         2.2.1. Find the component's folder in "components/componentName"
-	//         2.2.2. We will have files of different type in these folders. Each one ends differently: _api, _util etc.
-	//                This suffix points to where this components belongs. Copy them to their folders inside of the project.
-	//         2.2.3: These components share same dir-structure, so they all are already connected theoretically,
-	//                But we still have to connect them to their pages! (only _component's)
-	//				  Each page has comments specifically for this occasion:
-	//                // --- imports start --- ,  --- imports end ---
-	//                // --- content start --- , --- content end ---
-	//				  Find these comments, import & declare Page's components.
+	// TO-DO
 	// --- Theming ---
 	// 3. Grab required theme from /themes and put it in project/styles/theme.js (emotionCSS theming, optional dark mode)
-	//
-	// *Notes:
-	// Parse jsx files using goquery.
 
 	// init
 	copyPasteInitialStructure(config, srcDir, destDir)
 	// LOOP
-	for _, page := range config.Pages {
-		//1. page srcDir = "./foundation/common/Pa	e.jsx"
+	//sort pages in order to start from index [0]
+	sortedPages := sortMapByIndex(config.Pages)
+	for i, pageName := range sortedPages {
+		page := config.Pages[pageName]
 		pageSrcDir := "./foundation/common/Page.jsx"
-
-		pageDestDir := "./" + config.ProjectName + "/pages/" + page.Name + ".jsx"
-		//config pageName
-		// pageName := page.Name;
-		//
+		var pageDestDir string = "./" + config.ProjectName + "/pages/"
+		if i == 0 {
+			pageDestDir = pageDestDir + "index.jsx"
+		} else {
+			pageDestDir = pageDestDir + strings.ToLower(page.Name) + ".jsx"
+		}
 		copyFile(pageSrcDir, pageDestDir)
+		// loop for each component in order to:
+		// 1. open folder /components/componentName
+		// 2. find all files ending with _component: add import&declaration into the page
+		// 3. find all filed ending with _api: add getStaticProps to the page and use it. Pass props to the file and then to the component.
+		for _, component := range page.Components {
+			capitalizedComponentName := strings.ToUpper(component.Name[:1]) + component.Name[1:]
+			// 1.
+			componentSrcDir := "./foundation/components/" + component.Name
+			// 2.
+			err := filepath.Walk(componentSrcDir, func(path string, info os.FileInfo, err error) error {
+				filename := filepath.Base(path)
+				if err != nil {
+					pterm.Println(pterm.Red(err))
+					os.Exit(1)
+				}
+				if strings.Contains(path, "_component") {
+
+					// 2.1. Find the comment // --- imports start ---
+					// 2.2. Find the comment // --- imports end ---
+					// 2.3. Add import to the page
+					// 2.4. Find the comment // --- content start ---
+					// 2.5. Find the comment // --- content end ---
+					// 2.6. Add the component to the page
+
+					// --- 2.1, 2.2, 2.3
+					content, err := os.ReadFile(pageDestDir)
+					if err != nil {
+						fmt.Println(err)
+						return err
+					}
+					modifiedContent := string(content)
+					//
+					htmlToInsertImport := fmt.Sprintf("\n import %s from '@/components/%s/%s'; \n", capitalizedComponentName, component.Name, filename)
+					startIndexImport := strings.Index(modifiedContent, "// IMPORTS START")
+					endIndexImport := strings.Index(modifiedContent, "// IMPORTS END")
+					if startIndexImport != -1 && endIndexImport != -1 {
+						modifiedContent = modifiedContent[:endIndexImport] +
+							htmlToInsertImport +
+							modifiedContent[endIndexImport:]
+					} else {
+						fmt.Println("Start or end comment not found")
+					}
+					//
+					// --- 2.4, 2.5, 2.6
+					htmlToInsert := fmt.Sprintf("\n<%s {...props}/>\n", capitalizedComponentName)
+					startIndex := strings.Index(modifiedContent, "{/* CONTENT START */}")
+					endIndex := strings.Index(modifiedContent, "{/* CONTENT END */}")
+					// if startIndex != -1 && endIndex != -1 {
+					// 		modifiedContent = modifiedContent[:endIndex] +
+					// 		htmlToInsert +
+					// 			modifiedContent[endIndex:]
+					// 	} else {
+					// 		fmt.Println("Start or end comment not found")
+					// 	}
+
+					if startIndex != -1 && endIndex != -1 {
+						modifiedContent = modifiedContent[:endIndex] +
+							htmlToInsert +
+							modifiedContent[endIndex:]
+					} else {
+						fmt.Println("Start or end comment not found")
+					}
+
+					err = os.WriteFile(pageDestDir, []byte(modifiedContent), 0644)
+					if err != nil {
+						return err
+					}
+
+				}
+				if strings.Contains(path, "_api") {
+					//we need to add both import and getStaticProps !!!
+					// part 1:
+					// add import to the page (  )
+
+					// part 2:
+					//  Find the comment // STATIC PROPS START
+					//  Find the comment // STATIC PROPS END
+					//  Add getStaticProps to the page
+					//  Use the file's default exported func in getStaticProps and pass props to the page, and then to the component
+					//
+					// err = copyFile(path, destPath)
+					content, err := os.ReadFile(pageDestDir)
+					modifiedContent := string(content)
+					funcName := removeFileExtension(filename)
+					if err != nil {
+						fmt.Println(err)
+						return err
+					}
+					// part 1
+					htmlToInsertImport := fmt.Sprintf("\n import %s from '@/components/%s/%s'; \n", funcName, component.Name, filename)
+					startIndexImport := strings.Index(modifiedContent, "// IMPORTS START")
+					endIndexImport := strings.Index(modifiedContent, "// IMPORTS END")
+					if startIndexImport != -1 && endIndexImport != -1 {
+						modifiedContent = modifiedContent[:endIndexImport] +
+							htmlToInsertImport +
+							modifiedContent[endIndexImport:]
+					} else {
+						fmt.Println("Start or end comment not found")
+					}
+
+					// getStaticProps done
+					htmlToInsert := fmt.Sprintf("\n export async function getStaticProps() { \n const data = await %s(); \n return { props: { %s: data } }; \n } \n", funcName, funcName)
+					startIndex := strings.Index(modifiedContent, "// STATIC PROPS START")
+					endIndex := strings.Index(modifiedContent, "// STATIC PROPS END")
+					if startIndex != -1 && endIndex != -1 {
+						modifiedContent = modifiedContent[:startIndex+len("// STATIC PROPS START")] +
+							htmlToInsert +
+							modifiedContent[endIndex:]
+					} else {
+						fmt.Println("Start or end comment not found")
+					}
+					//find already existing components between // CONTENT START and // CONTENT END and add props of props.funcName to them
+					// --- 2.4, 2.5, 2.6
+
+					// save
+					err = os.WriteFile(pageDestDir, []byte(modifiedContent), 0644)
+					if err != nil {
+						return err
+					}
+				}
+				//TO-DO --- [slug].js, [slug].jsx etc.
+				if strings.Contains(path, "_slug") {
+					fileNameWithoutExtension := removeFileExtension(filename)
+					//example filename: pageName_slug.js
+					// Copy the file to the pages folder into it's own folder (filename without _slug). Wrap pageName with "[...]".
+					fileNameWithoutSlug := strings.Replace(fileNameWithoutExtension, "_slug", "", 1)
+					os.MkdirAll("./"+config.ProjectName+"/pages/"+strings.ToLower(fileNameWithoutSlug), 0755)
+					_ = copyFile(path, "./"+config.ProjectName+"/pages/"+strings.ToLower(fileNameWithoutSlug)+"/"+"["+fileNameWithoutSlug+"]"+extractFileExtension(filename))
+
+				}
+				return nil
+			})
+			if err != nil {
+				pterm.Println(pterm.Red(err))
+				os.Exit(1)
+			}
+
+			if err != nil {
+				pterm.Println(pterm.Red(err))
+				os.Exit(1)
+			}
+		}
+
 	}
-
-	//create func to copy paste ./common/Page.jsx into folder pages and rename the file & inner func name
-
 }
 
 func copyPasteInitialStructure(config *Config, srcDir string, destDir string) {

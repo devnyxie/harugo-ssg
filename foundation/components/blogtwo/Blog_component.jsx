@@ -23,7 +23,7 @@ function Items({ currentItems, config }) {
             </div>
             <span className="px-2 opacity-50">{'>>'}</span>
             <div className="w-100">
-              <Link as={`/posts/${post.slug}`} href="/posts/[post]">
+              <Link as={`/posttwo/${post.slug}`} href="/posttwo/[posttwo]">
                 <div className="fw-bold text-break">{post.title}</div>
               </Link>
               {/* <div className="fw-bold text-break">{post.title}</div> */}
@@ -78,8 +78,9 @@ function PaginatedItems({ itemsPerPage, posts, theme, config }) {
   );
 }
 
-function BlogList({ allPosts, theme, config }) {
-  //   if (allPosts === undefined) return;
+//blog_api = data passed from blog_api.js. Prop name = api file's name without file extension.
+function Blog({ blog_api, theme, config }) {
+  //   if (data === undefined) return;
   return (
     <div className="w-100 text-left mt-5">
       <h4 className="underlined_text">
@@ -89,9 +90,9 @@ function BlogList({ allPosts, theme, config }) {
         <PaginatedItems
           config={config}
           itemsPerPage={
-            config.max_posts_per_page ? config.max_posts_per_page : 8
+            config?.max_posts_per_page ? config?.max_posts_per_page : 8
           }
-          posts={allPosts}
+          posts={blog_api}
           theme={theme}
         />
       </div>
@@ -99,4 +100,4 @@ function BlogList({ allPosts, theme, config }) {
   );
 }
 
-export default BlogList;
+export default Blog;
