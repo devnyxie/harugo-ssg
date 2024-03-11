@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/pterm/pterm"
 )
@@ -25,7 +26,9 @@ func AskPages(config *Config) {
 	} else if selectedOption == "Continue" {
 		if len(config.Pages) == 0 {
 			pterm.Warning.Println("No pages found. Please add a page.")
-			AskPages(config)
+			return
+		} else {
+			return
 		}
 	} else if selectedOption == "Exit" {
 		pterm.Println(pterm.Red("Exiting..."))
@@ -33,4 +36,30 @@ func AskPages(config *Config) {
 	} else {
 		askComponents(config, selectedOption)
 	}
+}
+
+func addPage(config *Config) {
+	var newPageIndex int
+	if len(config.Pages) == 0 {
+		newPageIndex = 0
+	} else {
+		newPageIndex = len(config.Pages)
+	}
+	newPageName, err := pterm.DefaultInteractiveTextInput.WithDefaultText("Name of the page").Show()
+	if err != nil {
+		fmt.Printf("Prompt failed %v\n", err)
+		os.Exit(1)
+	}
+	newPageName = strings.TrimSpace(newPageName)
+	if newPageName == "" {
+		pterm.Println(pterm.Red("Page name cannot be empty"))
+		return
+	}
+	newPage := Page{
+		Index:      newPageIndex,
+		Name:       newPageName,
+		Components: make(map[string]Component),
+	}
+	config.Pages[newPage.Name] = newPage
+	AskPages(config)
 }

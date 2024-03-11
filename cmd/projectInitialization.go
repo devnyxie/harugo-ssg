@@ -18,29 +18,24 @@ func InitializeProject(config *Config) {
 	} else {
 		destDir = config.ProjectName
 	}
-	// TO-DO
-	// --- Theming ---
-	// 3. Grab required theme from /themes and put it in project/styles/theme.js (emotionCSS theming, optional dark mode)
 
 	// init
 	copyPasteInitialStructure(config, srcDir, destDir)
-	// LOOP
 	//sort pages in order to start from index [0]
 	sortedPages := sortMapByIndex(config.Pages)
 	for i, pageName := range sortedPages {
 		page := config.Pages[pageName]
 		pageSrcDir := "./foundation/common/Page.jsx"
-		var pageDestDir string = "./" + config.ProjectName + "/pages/"
+		var pageDestDir string = destDir + "/pages/"
+		var pagePath string
 		if i == 0 {
 			pageDestDir = pageDestDir + "index.jsx"
+			pagePath = "/"
 		} else {
 			pageDestDir = pageDestDir + strings.ToLower(page.Name) + ".jsx"
+			pagePath = fmt.Sprintf("/%s", strings.ToLower(page.Name))
 		}
 		copyFile(pageSrcDir, pageDestDir)
-		// loop for each component in order to:
-		// 1. open folder /components/componentName
-		// 2. find all files ending with _component: add import&declaration into the page
-		// 3. find all filed ending with _api: add getStaticProps to the page and use it. Pass props to the file and then to the component.
 		for _, component := range page.Components {
 			capitalizedComponentName := strings.ToUpper(component.Name[:1]) + component.Name[1:]
 			// 1.
@@ -53,14 +48,6 @@ func InitializeProject(config *Config) {
 					os.Exit(1)
 				}
 				if strings.Contains(path, "_component") {
-
-					// 2.1. Find the comment // --- imports start ---
-					// 2.2. Find the comment // --- imports end ---
-					// 2.3. Add import to the page
-					// 2.4. Find the comment // --- content start ---
-					// 2.5. Find the comment // --- content end ---
-					// 2.6. Add the component to the page
-
 					// --- 2.1, 2.2, 2.3
 					content, err := os.ReadFile(pageDestDir)
 					if err != nil {
@@ -68,7 +55,6 @@ func InitializeProject(config *Config) {
 						return err
 					}
 					modifiedContent := string(content)
-					//
 					htmlToInsertImport := fmt.Sprintf("\n import %s from '@/components/%s/%s'; \n", capitalizedComponentName, component.Name, filename)
 					startIndexImport := strings.Index(modifiedContent, "// IMPORTS START")
 					endIndexImport := strings.Index(modifiedContent, "// IMPORTS END")
@@ -79,19 +65,10 @@ func InitializeProject(config *Config) {
 					} else {
 						fmt.Println("Start or end comment not found")
 					}
-					//
 					// --- 2.4, 2.5, 2.6
 					htmlToInsert := fmt.Sprintf("\n<%s {...props}/>\n", capitalizedComponentName)
 					startIndex := strings.Index(modifiedContent, "{/* CONTENT START */}")
 					endIndex := strings.Index(modifiedContent, "{/* CONTENT END */}")
-					// if startIndex != -1 && endIndex != -1 {
-					// 		modifiedContent = modifiedContent[:endIndex] +
-					// 		htmlToInsert +
-					// 			modifiedContent[endIndex:]
-					// 	} else {
-					// 		fmt.Println("Start or end comment not found")
-					// 	}
-
 					if startIndex != -1 && endIndex != -1 {
 						modifiedContent = modifiedContent[:endIndex] +
 							htmlToInsert +
@@ -157,14 +134,11 @@ func InitializeProject(config *Config) {
 						return err
 					}
 				}
-				//TO-DO --- [slug].js, [slug].jsx etc.
 				if strings.Contains(path, "_slug") {
 					fileNameWithoutExtension := removeFileExtension(filename)
-					//example filename: pageName_slug.js
-					// Copy the file to the pages folder into it's own folder (filename without _slug). Wrap pageName with "[...]".
 					fileNameWithoutSlug := strings.Replace(fileNameWithoutExtension, "_slug", "", 1)
-					os.MkdirAll("./"+config.ProjectName+"/pages/"+strings.ToLower(fileNameWithoutSlug), 0755)
-					_ = copyFile(path, "./"+config.ProjectName+"/pages/"+strings.ToLower(fileNameWithoutSlug)+"/"+"["+fileNameWithoutSlug+"]"+extractFileExtension(filename))
+					os.MkdirAll(destDir+"/pages/"+strings.ToLower(fileNameWithoutSlug), 0755)
+					_ = copyFile(path, destDir+"/pages/"+strings.ToLower(fileNameWithoutSlug)+"/"+"["+fileNameWithoutSlug+"]"+extractFileExtension(filename))
 
 				}
 				return nil
@@ -179,8 +153,29 @@ func InitializeProject(config *Config) {
 				os.Exit(1)
 			}
 		}
-
+		// add pages to the config.yaml
+		ymlToInsert := fmt.Sprintf("\n- pageName: %s\n  pagePath: %s\n", page.Name, pagePath)
+		if i == 0 {
+			ymlToInsert = "\npages:" + ymlToInsert
+		}
+		// insertContentBetweenComments implementation
+		err := insertContentBetweenComments(destDir+"/config/config.yaml", "# --- Pages start ---", "# --- Pages end ---", ymlToInsert)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
 	}
+	// --- add website's title and description to the config.yaml ---
+	ymlToInsert := fmt.Sprintf("\n- site_title: %s\n  site_description: %s\n", config.ProjectName, config.ProjectName+" website's description.")
+	err := insertContentBetweenComments(destDir+"/config/config.yaml", "# --- Website settings start ---", "# --- Website settings end ---", ymlToInsert)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	// TO-DO
+	// --- Theming ---
+	// 3. Grab required theme from /themes and put it in project/styles/theme.js (emotionCSS theming, optional dark mode)
+	//
 }
 
 func copyPasteInitialStructure(config *Config, srcDir string, destDir string) {
@@ -252,7 +247,7 @@ func copyFile(src, dst string) error {
 }
 
 func getExceptions(config *Config) []string {
-	var exceptions []string = []string{"node_modules", "2023-05-05.md", ".next"}
+	var exceptions []string = []string{"node_modules", "2023-05-05.md", ".next", "common", "themes"}
 	allComponents, _ := findAllComponents()
 	var allChosenComponents []string
 	for _, page := range config.Pages {
@@ -268,4 +263,38 @@ func getExceptions(config *Config) []string {
 	}
 
 	return exceptions
+}
+
+func insertContentBetweenComments(filePath string, startComment string, endComment string, contentToInsert string) error {
+	// Read the file
+	fileContent, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to read file: %w", err)
+	}
+
+	// Convert to string
+	content := string(fileContent)
+
+	// Find the start and end indices
+	startIndex := strings.Index(content, startComment)
+	endIndex := strings.Index(content, endComment)
+
+	// Check if the start and end comments were found
+	if startIndex == -1 || endIndex == -1 {
+		return fmt.Errorf("start or end comment not found")
+	}
+
+	// Adjust the start index to point to the end of the start comment
+	startIndex += len(startComment)
+
+	// Insert the content
+	modifiedContent := content[:startIndex] + contentToInsert + content[endIndex:]
+
+	// Write the modified content back to the file
+	err = os.WriteFile(filePath, []byte(modifiedContent), os.ModePerm)
+	if err != nil {
+		return fmt.Errorf("failed to write to file: %w", err)
+	}
+
+	return nil
 }

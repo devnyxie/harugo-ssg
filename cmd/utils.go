@@ -15,27 +15,6 @@ func IsSelectedFunc(config *Config, selectedPageName string, componentName strin
 	return ok
 }
 
-func addPage(config *Config) {
-	var newPageIndex int
-	if len(config.Pages) == 0 {
-		newPageIndex = 0
-	} else {
-		newPageIndex = len(config.Pages)
-	}
-	newPageName, _ := pterm.DefaultInteractiveTextInput.WithDefaultText("Name of the page").Show()
-	if newPageName == "" {
-		pterm.Println(pterm.Red("Page name cannot be empty"))
-		addPage(config)
-	}
-	newPage := Page{
-		Index:      newPageIndex,
-		Name:       newPageName,
-		Components: make(map[string]Component),
-	}
-	config.Pages[newPage.Name] = newPage
-	AskPages(config)
-}
-
 func addComponent(config *Config, page Page, targetComponentName string) {
 	var newComponentIndex int
 	if len(config.Pages[page.Name].Components) == 0 {
