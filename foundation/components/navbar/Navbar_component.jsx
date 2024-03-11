@@ -5,9 +5,11 @@ function Navbar(props) {
   const allPages = props.config.pages;
   return (
     <div className="navbar">
-      <div className="logo">
-        <Link href="/">{props.config.site_title}</Link>
-      </div>
+      {/* <div className="logo"> */}
+      <Link href="/" style={{ alignSelf: 'self-start' }}>
+        {props.config.site_title}
+      </Link>
+      {/* </div> */}
       <div>
         {allPages &&
           allPages.map((page) => {

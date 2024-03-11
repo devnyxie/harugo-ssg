@@ -29,10 +29,10 @@ func InitializeProject(config *Config) {
 		var pageDestDir string = destDir + "/pages/"
 		var pagePath string
 		if i == 0 {
-			pageDestDir = pageDestDir + "index.jsx"
+			pageDestDir = pageDestDir + "index.js"
 			pagePath = "/"
 		} else {
-			pageDestDir = pageDestDir + strings.ToLower(page.Name) + ".jsx"
+			pageDestDir = pageDestDir + strings.ToLower(page.Name) + ".js"
 			pagePath = fmt.Sprintf("/%s", strings.ToLower(page.Name))
 		}
 		copyFile(pageSrcDir, pageDestDir)
@@ -42,14 +42,19 @@ func InitializeProject(config *Config) {
 			componentSrcDir := "./foundation/components/" + component.Name
 			// 2.
 			err := filepath.Walk(componentSrcDir, func(path string, info os.FileInfo, err error) error {
+				compPageDestDir := pageDestDir
 				filename := filepath.Base(path)
+				fileNameWithoutExtension := removeFileExtension(filename)
+				if strings.ToLower(fileNameWithoutExtension) == "navbar_component" {
+					compPageDestDir = destDir + "/pages/_app.js"
+				}
 				if err != nil {
 					pterm.Println(pterm.Red(err))
 					os.Exit(1)
 				}
 				if strings.Contains(path, "_component") {
 					// --- 2.1, 2.2, 2.3
-					content, err := os.ReadFile(pageDestDir)
+					content, err := os.ReadFile(compPageDestDir)
 					if err != nil {
 						fmt.Println(err)
 						return err
@@ -77,7 +82,7 @@ func InitializeProject(config *Config) {
 						fmt.Println("Start or end comment not found")
 					}
 
-					err = os.WriteFile(pageDestDir, []byte(modifiedContent), 0644)
+					err = os.WriteFile(compPageDestDir, []byte(modifiedContent), 0644)
 					if err != nil {
 						return err
 					}

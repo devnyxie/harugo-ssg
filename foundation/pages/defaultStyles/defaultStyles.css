@@ -5,3 +5,11 @@
   justify-content: space-between;
   align-items: center;
 }
+
+.navbar__menu__item {
+  margin-left: 10px;
+}
+
+main {
+  max-width: 1200px;
+}

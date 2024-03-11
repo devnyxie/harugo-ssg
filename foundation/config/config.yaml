@@ -1,12 +1,10 @@
 # --- Website settings start ---
-site_title: 'Test'
+
 # --- Website settings end ---
 
 # --- User start ---
 # --- User end ---
 
 # --- Pages start ---
-pages:
-  - pageName: 'test'
-    pagePath: 'test'
+
 # --- Pages end ---

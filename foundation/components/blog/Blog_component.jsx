@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-// import AnimatedLink from '../AnimatedLink';
 import { formatDateString } from '../../utils/general';
 import Link from 'next/link';
 
@@ -7,26 +6,28 @@ function Items({ currentItems, config }) {
   return (
     <>
       {currentItems.map((post, index) => (
-        <div key={post.slug} className="pb-1 pt-1">
-          <div className="w-100 d-flex justify-content-between">
+        <div key={post.slug}>
+          <div style={{ display: 'flex' }}>
             <div
               style={{
                 width: 'max-content',
                 whiteSpace: 'nowrap',
+                marginRight: '0.5rem',
               }}
             >
-              {formatDateString(
-                post.date,
-                config.blog_preview_date_format,
-                config.blog_preview_date_separators
-              )}
+              {formatDateString(post.date)}
             </div>
-            <span className="px-2 opacity-50">{'>>'}</span>
-            <div className="w-100">
+            <span
+              style={{
+                marginRight: '0.5rem',
+              }}
+            >
+              {'>>'}
+            </span>
+            <div>
               <Link as={`/post/${post.slug}`} href="/post/[post]">
                 <div className="fw-bold text-break">{post.title}</div>
               </Link>
-              {/* <div className="fw-bold text-break">{post.title}</div> */}
             </div>
           </div>
 
@@ -78,15 +79,13 @@ function PaginatedItems({ itemsPerPage, posts, theme, config }) {
   );
 }
 
-//blog_api = data passed from blog_api.js. Prop name = api file's name without file extension.
 function Blog({ blog_api, theme, config }) {
-  //   if (data === undefined) return;
   return (
-    <div className="w-100 text-left mt-5">
+    <div>
       <h4 className="underlined_text">
         <div className="text">Blog</div>
       </h4>
-      <div className="pt-2 force-font">
+      <div>
         <PaginatedItems
           config={config}
           itemsPerPage={
