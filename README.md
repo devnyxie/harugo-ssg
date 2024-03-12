@@ -11,5 +11,5 @@ Once you launch the CLI, you will be able to:
 
 # Contribution
  Create base components & themes! You will be able to even modify the base layout with ease with the help of <strong>Dynamic Component Replacement</strong>.<br/>
- In essence, by declaring your own version of certain components (e.g., Navbar), it will take precedence over the original one. Once you are ready, hit that `Create PR` button!
+ In essence, by declaring your own version of certain components (e.g. Navbar), it will take precedence over the original one. Once you are ready, hit that `Create PR` button!
   
