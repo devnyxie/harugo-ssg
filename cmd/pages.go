@@ -26,7 +26,7 @@ func AskPages(config *Config) {
 	} else if selectedOption == "Continue" {
 		if len(config.Pages) == 0 {
 			pterm.Warning.Println("No pages found. Please add a page.")
-			return
+			StartCMD(config)
 		} else {
 			return
 		}
@@ -53,7 +53,7 @@ func addPage(config *Config) {
 	newPageName = strings.TrimSpace(newPageName)
 	if newPageName == "" {
 		pterm.Println(pterm.Red("Page name cannot be empty"))
-		return
+		StartCMD(config)
 	}
 	newPage := Page{
 		Index:      newPageIndex,

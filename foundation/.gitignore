@@ -37,4 +37,6 @@ next-env.d.ts
 
 #page for testing
 /pages/index.js
+#posts
+/_posts/*
 

@@ -1,14 +1,8 @@
 package cmd
 
-import (
-	"github.com/pterm/pterm"
-)
-
 func StartCMD(config *Config) {
-	// Initial config
-
-	// Init Full Screen PTERM area
-	area, _ := pterm.DefaultArea.WithFullscreen().Start()
+	// Init Full Screen PTERM area (temporary disabled)
+	// area, _ := pterm.DefaultArea.WithFullscreen().Start()
 	// - Project Name -
 	AskProjectName(config)
 	// - Project Pages -
@@ -22,5 +16,5 @@ func StartCMD(config *Config) {
 	// - Project Creation -
 	InitializeProject(config)
 	// Terminate Full Screen PTERM area
-	area.Stop()
+	// area.Stop()
 }

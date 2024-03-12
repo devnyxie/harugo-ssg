@@ -177,14 +177,12 @@ func InitializeProject(config *Config) {
 		fmt.Println(err)
 		return
 	}
-	// TO-DO
-	// --- Theming ---
-	// 3. Grab required theme from /themes and put it in project/styles/theme.js (emotionCSS theming, optional dark mode)
-	//
 }
 
 func copyPasteInitialStructure(config *Config, srcDir string, destDir string) {
-	exceptions := getExceptions(config)
+	exceptions := []string{"node_modules", ".next"}
+	//lets change exceptions to allowed paths
+	requiredPaths := getRequiredPaths(config)
 
 	err := filepath.Walk(srcDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -197,14 +195,26 @@ func copyPasteInitialStructure(config *Config, srcDir string, destDir string) {
 			pterm.Println(pterm.Red(err))
 			os.Exit(1)
 		}
-
 		destPath := filepath.Join(destDir, relPath)
 
 		// Skip exceptions (files and folders)
 		for _, exception := range exceptions {
+			// fmt.Println("Exception: " + exception)
 			if strings.Contains(path, exception) {
 				return nil
 			}
+		}
+
+		// Skip files and folders that are not allowed
+		found := false
+		for _, requiredPath := range requiredPaths {
+			if requiredPath == relPath {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return nil
 		}
 
 		if info.IsDir() {
@@ -215,6 +225,7 @@ func copyPasteInitialStructure(config *Config, srcDir string, destDir string) {
 			}
 		} else {
 			err = copyFile(path, destPath)
+			fmt.Println("Copying file: " + path + " to: " + destPath)
 			if err != nil {
 				pterm.Println(pterm.Red(err))
 				os.Exit(1)
@@ -251,23 +262,49 @@ func copyFile(src, dst string) error {
 	return nil
 }
 
-func getExceptions(config *Config) []string {
-	var exceptions []string = []string{"node_modules", "2023-05-05.md", ".next", "common", "themes"}
-	allComponents, _ := findAllComponents()
-	var allChosenComponents []string
-	for _, page := range config.Pages {
-		for _, component := range config.Pages[page.Name].Components {
-			allChosenComponents = append(allChosenComponents, component.Name)
+func getRequiredPaths(config *Config) []string {
+	// 1. all chosen components paths
+	// 2. if (blog) add _posts path
+	// 3. config folder
+	// 4. public folder
+	// 5. selected theme folder
+	// 6. utils folder
+	// 7. layouts folders
+	// 8. _app.js
+	// 9. defaultStyles folder
+	// 10. package.json, package-lock.json, .gitignore
+	//      "next.config.js", "next.config.mjs", "jsconfig.json"
+	//      "." (root folder)
+	var allowedPaths = []string{}
+	// 1.
+	for _, Page := range config.Pages {
+		for _, Component := range Page.Components {
+			ComponentPath := "components/" + Component.Name
+			allowedPaths = append(allowedPaths, ComponentPath)
+			// 2.
+			if Component.Name == "blog" {
+				allowedPaths = append(allowedPaths, "_posts")
+			}
 		}
 	}
+	// 3.
+	allowedPaths = append(allowedPaths, "config", "config/config.yaml")
+	// 4.
+	allowedPaths = append(allowedPaths, "public")
+	// 5.
+	allowedPaths = append(allowedPaths, "themes/"+config.Theme)
+	// 6.
+	allowedPaths = append(allowedPaths, "utils")
+	// 7.
+	allowedPaths = append(allowedPaths, "layouts")
+	// 8.
+	allowedPaths = append(allowedPaths, "pages", "pages/_app.js")
+	// 9.
+	allowedPaths = append(allowedPaths, "pages/defaultStyles")
+	// 10.
+	allowedPaths = append(allowedPaths, "package.json", "package-lock.json", ".gitignore", "next.config.js", "next.config.mjs", "jsconfig.json", ".")
+	return allowedPaths
 
-	for _, comp := range allComponents {
-		if !stringExistsInSlice(comp.Name, allChosenComponents) {
-			exceptions = append(exceptions, comp.Name)
-		}
-	}
-
-	return exceptions
 }
 
 func insertContentBetweenComments(filePath string, startComment string, endComment string, contentToInsert string) error {
