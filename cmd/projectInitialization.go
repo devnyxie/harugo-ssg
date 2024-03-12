@@ -19,9 +19,182 @@ func InitializeProject(config *Config) {
 		destDir = config.ProjectName
 	}
 
-	// init
+	// - init base structure -
 	copyPasteInitialStructure(config, srcDir, destDir)
-	//sort pages in order to start from index [0]
+	// - create pages, import & declare components -
+	initPages(config, destDir)
+	// - add website's title and description to the config.yaml -
+	ymlToInsert := fmt.Sprintf("\n- site_title: %s\n  site_description: %s\n", config.ProjectName, config.ProjectName+" website's description.")
+	err := insertContentBetweenComments(destDir+"/config/config.yaml", "# --- Website settings start ---", "# --- Website settings end ---", ymlToInsert)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+}
+
+func copyPasteInitialStructure(config *Config, srcDir string, destDir string) {
+	exceptions := []string{"node_modules", ".next"}
+	//lets change exceptions to allowed paths
+	requiredPaths := getRequiredPaths(config)
+
+	err := filepath.Walk(srcDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			pterm.Println(pterm.Red(err))
+			os.Exit(1)
+		}
+		relPath, err := filepath.Rel(srcDir, path)
+		if err != nil {
+			pterm.Println(pterm.Red(err))
+			os.Exit(1)
+		}
+		destPath := filepath.Join(destDir, relPath)
+
+		// Skip exceptions (files and folders)
+		for _, exception := range exceptions {
+			// fmt.Println("Exception: " + exception)
+			if strings.Contains(path, exception) {
+				return nil
+			}
+		}
+
+		// Skip files and folders that are not required
+		found := false
+		for _, requiredPath := range requiredPaths {
+			if strings.HasPrefix(relPath, requiredPath) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return nil
+		}
+
+		if info.IsDir() {
+			fmt.Println("Creating directory: " + destPath)
+			err = os.MkdirAll(destPath, info.Mode())
+			if err != nil {
+				pterm.Println(pterm.Red(err))
+				os.Exit(1)
+			}
+		} else {
+			fmt.Println("Copying file from: " + path + " to: " + destPath)
+			err = copyFile(path, destPath)
+			if err != nil {
+				pterm.Println(pterm.Red(err))
+				os.Exit(1)
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		pterm.Println(pterm.Red(err))
+		os.Exit(1)
+	}
+	fmt.Printf("Project %s has been initialized successfully.\n", config.ProjectName)
+}
+
+func copyFile(src, dst string) error {
+	sourceFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer sourceFile.Close()
+
+	destinationFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer destinationFile.Close()
+
+	_, err = io.Copy(destinationFile, sourceFile)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func getRequiredPaths(config *Config) []string {
+	// 1. all chosen components paths
+	// 2. if (blog) add _posts path
+	// 3. config folder
+	// 4. public folder
+	// 5. selected theme folder
+	// 6. utils folder
+	// 7. layouts folders
+	// 8. _app.js
+	// 9. defaultStyles folder
+	// 10. package.json, package-lock.json, .gitignore
+	//      "next.config.js", "next.config.mjs", "jsconfig.json"
+	//      "." (root folder)
+	var allowedPaths = []string{}
+	// 1.
+	for _, Page := range config.Pages {
+		for _, Component := range Page.Components {
+			ComponentPath := "components/" + Component.Name
+			allowedPaths = append(allowedPaths, ComponentPath)
+			// 2.
+			if Component.Name == "blog" {
+				allowedPaths = append(allowedPaths, "_posts")
+			}
+		}
+	}
+	// 3.
+	allowedPaths = append(allowedPaths, "config", "config/config.yaml")
+	// 4.
+	allowedPaths = append(allowedPaths, "public")
+	// 5.
+	allowedPaths = append(allowedPaths, "themes/"+config.Theme)
+	// 6.
+	allowedPaths = append(allowedPaths, "utils")
+	// 7.
+	allowedPaths = append(allowedPaths, "layouts")
+	// 8.
+	allowedPaths = append(allowedPaths, "pages", "pages/_app.js")
+	// 9.
+	allowedPaths = append(allowedPaths, "pages/defaultStyles")
+	// 10.
+	allowedPaths = append(allowedPaths, "package.json", "package-lock.json", ".gitignore", "next.config.js", "next.config.mjs", "jsconfig.json", ".")
+	return allowedPaths
+
+}
+
+func insertContentBetweenComments(filePath string, startComment string, endComment string, contentToInsert string) error {
+	// Read the file
+	fileContent, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to read file: %w", err)
+	}
+
+	// Convert to string
+	content := string(fileContent)
+
+	// Find the start and end indices
+	startIndex := strings.Index(content, startComment)
+	endIndex := strings.Index(content, endComment)
+
+	// Check if the start and end comments were found
+	if startIndex == -1 || endIndex == -1 {
+		return fmt.Errorf("start or end comment not found")
+	}
+
+	// Adjust the start index to point to the end of the start comment
+	startIndex += len(startComment)
+
+	// Insert the content
+	modifiedContent := content[:startIndex] + contentToInsert + content[endIndex:]
+
+	// Write the modified content back to the file
+	err = os.WriteFile(filePath, []byte(modifiedContent), os.ModePerm)
+	if err != nil {
+		return fmt.Errorf("failed to write to file: %w", err)
+	}
+
+	return nil
+}
+
+func initPages(config *Config, destDir string) {
 	sortedPages := sortMapByIndex(config.Pages)
 	for i, pageName := range sortedPages {
 		page := config.Pages[pageName]
@@ -170,173 +343,4 @@ func InitializeProject(config *Config) {
 			return
 		}
 	}
-	// --- add website's title and description to the config.yaml ---
-	ymlToInsert := fmt.Sprintf("\n- site_title: %s\n  site_description: %s\n", config.ProjectName, config.ProjectName+" website's description.")
-	err := insertContentBetweenComments(destDir+"/config/config.yaml", "# --- Website settings start ---", "# --- Website settings end ---", ymlToInsert)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-}
-
-func copyPasteInitialStructure(config *Config, srcDir string, destDir string) {
-	exceptions := []string{"node_modules", ".next"}
-	//lets change exceptions to allowed paths
-	requiredPaths := getRequiredPaths(config)
-
-	err := filepath.Walk(srcDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			pterm.Println(pterm.Red(err))
-			os.Exit(1)
-		}
-
-		relPath, err := filepath.Rel(srcDir, path)
-		if err != nil {
-			pterm.Println(pterm.Red(err))
-			os.Exit(1)
-		}
-		destPath := filepath.Join(destDir, relPath)
-
-		// Skip exceptions (files and folders)
-		for _, exception := range exceptions {
-			// fmt.Println("Exception: " + exception)
-			if strings.Contains(path, exception) {
-				return nil
-			}
-		}
-
-		// Skip files and folders that are not allowed
-		found := false
-		for _, requiredPath := range requiredPaths {
-			if requiredPath == relPath {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return nil
-		}
-
-		if info.IsDir() {
-			err = os.MkdirAll(destPath, info.Mode())
-			if err != nil {
-				pterm.Println(pterm.Red(err))
-				os.Exit(1)
-			}
-		} else {
-			err = copyFile(path, destPath)
-			fmt.Println("Copying file: " + path + " to: " + destPath)
-			if err != nil {
-				pterm.Println(pterm.Red(err))
-				os.Exit(1)
-			}
-		}
-
-		return nil
-	})
-	if err != nil {
-		pterm.Println(pterm.Red(err))
-		os.Exit(1)
-	}
-	fmt.Println("Base was just created in: " + destDir)
-}
-
-func copyFile(src, dst string) error {
-	sourceFile, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer sourceFile.Close()
-
-	destinationFile, err := os.Create(dst)
-	if err != nil {
-		return err
-	}
-	defer destinationFile.Close()
-
-	_, err = io.Copy(destinationFile, sourceFile)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func getRequiredPaths(config *Config) []string {
-	// 1. all chosen components paths
-	// 2. if (blog) add _posts path
-	// 3. config folder
-	// 4. public folder
-	// 5. selected theme folder
-	// 6. utils folder
-	// 7. layouts folders
-	// 8. _app.js
-	// 9. defaultStyles folder
-	// 10. package.json, package-lock.json, .gitignore
-	//      "next.config.js", "next.config.mjs", "jsconfig.json"
-	//      "." (root folder)
-	var allowedPaths = []string{}
-	// 1.
-	for _, Page := range config.Pages {
-		for _, Component := range Page.Components {
-			ComponentPath := "components/" + Component.Name
-			allowedPaths = append(allowedPaths, ComponentPath)
-			// 2.
-			if Component.Name == "blog" {
-				allowedPaths = append(allowedPaths, "_posts")
-			}
-		}
-	}
-	// 3.
-	allowedPaths = append(allowedPaths, "config", "config/config.yaml")
-	// 4.
-	allowedPaths = append(allowedPaths, "public")
-	// 5.
-	allowedPaths = append(allowedPaths, "themes/"+config.Theme)
-	// 6.
-	allowedPaths = append(allowedPaths, "utils")
-	// 7.
-	allowedPaths = append(allowedPaths, "layouts")
-	// 8.
-	allowedPaths = append(allowedPaths, "pages", "pages/_app.js")
-	// 9.
-	allowedPaths = append(allowedPaths, "pages/defaultStyles")
-	// 10.
-	allowedPaths = append(allowedPaths, "package.json", "package-lock.json", ".gitignore", "next.config.js", "next.config.mjs", "jsconfig.json", ".")
-	return allowedPaths
-
-}
-
-func insertContentBetweenComments(filePath string, startComment string, endComment string, contentToInsert string) error {
-	// Read the file
-	fileContent, err := os.ReadFile(filePath)
-	if err != nil {
-		return fmt.Errorf("failed to read file: %w", err)
-	}
-
-	// Convert to string
-	content := string(fileContent)
-
-	// Find the start and end indices
-	startIndex := strings.Index(content, startComment)
-	endIndex := strings.Index(content, endComment)
-
-	// Check if the start and end comments were found
-	if startIndex == -1 || endIndex == -1 {
-		return fmt.Errorf("start or end comment not found")
-	}
-
-	// Adjust the start index to point to the end of the start comment
-	startIndex += len(startComment)
-
-	// Insert the content
-	modifiedContent := content[:startIndex] + contentToInsert + content[endIndex:]
-
-	// Write the modified content back to the file
-	err = os.WriteFile(filePath, []byte(modifiedContent), os.ModePerm)
-	if err != nil {
-		return fmt.Errorf("failed to write to file: %w", err)
-	}
-
-	return nil
 }
