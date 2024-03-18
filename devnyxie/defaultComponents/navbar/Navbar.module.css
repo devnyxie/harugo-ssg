@@ -1,0 +1,13 @@
+.Navbar {
+  width: 100%;
+}
+.Navbar__content {
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.navbar__menu__item {
+  margin-left: 10px;
+}

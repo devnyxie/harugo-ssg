@@ -24,8 +24,8 @@ func InitializeProject(config *Config) {
 	// - create pages, import & declare components -
 	initPages(config, destDir)
 	// - add website's title and description to the config.yaml -
-	ymlToInsert := fmt.Sprintf("\n- site_title: %s\n  site_description: %s\n", config.ProjectName, config.ProjectName+" website's description.")
-	err := insertContentBetweenComments(destDir+"/config/config.yaml", "# --- Website settings start ---", "# --- Website settings end ---", ymlToInsert)
+	ymlToInsert := fmt.Sprintf("\nsite_title: %s\nsite_description: %s\n", config.ProjectName, config.ProjectName+" website's description.")
+	err := insertContentBetweenComments(destDir+"/config/config.yaml", "# --- Website settings start ---", "# --- Website settings end ---", ymlToInsert, true)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -33,7 +33,7 @@ func InitializeProject(config *Config) {
 }
 
 func copyPasteInitialStructure(config *Config, srcDir string, destDir string) {
-	exceptions := []string{"node_modules", ".next"}
+	// exceptions := []string{"node_modules", ".next"}                                 to-do: enable before release
 	//lets change exceptions to allowed paths
 	requiredPaths := getRequiredPaths(config)
 
@@ -50,12 +50,11 @@ func copyPasteInitialStructure(config *Config, srcDir string, destDir string) {
 		destPath := filepath.Join(destDir, relPath)
 
 		// Skip exceptions (files and folders)
-		for _, exception := range exceptions {
-			// fmt.Println("Exception: " + exception)
-			if strings.Contains(path, exception) {
-				return nil
-			}
-		}
+		// for _, exception := range exceptions {
+		// 	if strings.Contains(path, exception) {                                    to-do: enable before release
+		// 		return nil
+		// 	}
+		// }
 
 		// Skip files and folders that are not required
 		found := false
@@ -128,6 +127,7 @@ func getRequiredPaths(config *Config) []string {
 	// 10. package.json, package-lock.json, .gitignore
 	//      "next.config.js", "next.config.mjs", "jsconfig.json"
 	//      "." (root folder)
+	// 11. all files & folders of defaultComponents
 	var allowedPaths = []string{}
 	// 1.
 	for _, Page := range config.Pages {
@@ -156,11 +156,12 @@ func getRequiredPaths(config *Config) []string {
 	allowedPaths = append(allowedPaths, "pages/defaultStyles")
 	// 10.
 	allowedPaths = append(allowedPaths, "package.json", "package-lock.json", ".gitignore", "next.config.js", "next.config.mjs", "jsconfig.json", ".")
+	// 11.
+	allowedPaths = append(allowedPaths, "defaultComponents")
 	return allowedPaths
-
 }
 
-func insertContentBetweenComments(filePath string, startComment string, endComment string, contentToInsert string) error {
+func insertContentBetweenComments(filePath string, startComment string, endComment string, contentToInsert string, eraseExistingContent bool) error {
 	// Read the file
 	fileContent, err := os.ReadFile(filePath)
 	if err != nil {
@@ -181,6 +182,12 @@ func insertContentBetweenComments(filePath string, startComment string, endComme
 
 	// Adjust the start index to point to the end of the start comment
 	startIndex += len(startComment)
+
+	if !eraseExistingContent {
+		// Preserve existing content between the comments
+		existingContent := content[startIndex:endIndex]
+		contentToInsert = existingContent + contentToInsert
+	}
 
 	// Insert the content
 	modifiedContent := content[:startIndex] + contentToInsert + content[endIndex:]
@@ -209,6 +216,7 @@ func initPages(config *Config, destDir string) {
 			pagePath = fmt.Sprintf("/%s", strings.ToLower(page.Name))
 		}
 		copyFile(pageSrcDir, pageDestDir)
+		changeMainFunctionName(pageDestDir, "function Page", "function "+page.Name)
 		for _, component := range page.Components {
 			capitalizedComponentName := strings.ToUpper(component.Name[:1]) + component.Name[1:]
 			// 1.
@@ -217,10 +225,6 @@ func initPages(config *Config, destDir string) {
 			err := filepath.Walk(componentSrcDir, func(path string, info os.FileInfo, err error) error {
 				compPageDestDir := pageDestDir
 				filename := filepath.Base(path)
-				fileNameWithoutExtension := removeFileExtension(filename)
-				if strings.ToLower(fileNameWithoutExtension) == "navbar_component" {
-					compPageDestDir = destDir + "/pages/_app.js"
-				}
 				if err != nil {
 					pterm.Println(pterm.Red(err))
 					os.Exit(1)
@@ -332,15 +336,30 @@ func initPages(config *Config, destDir string) {
 			}
 		}
 		// add pages to the config.yaml
-		ymlToInsert := fmt.Sprintf("\n- pageName: %s\n  pagePath: %s\n", page.Name, pagePath)
+		ymlToInsert := fmt.Sprintf("\n  - name: %s\n    path: %s\n", page.Name, pagePath)
 		if i == 0 {
 			ymlToInsert = "\npages:" + ymlToInsert
 		}
 		// insertContentBetweenComments implementation
-		err := insertContentBetweenComments(destDir+"/config/config.yaml", "# --- Pages start ---", "# --- Pages end ---", ymlToInsert)
+		err := insertContentBetweenComments(destDir+"/config/config.yaml", "# --- Pages start ---", "# --- Pages end ---", ymlToInsert, true)
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
 	}
+}
+
+// func to change JS file's main function name
+func changeMainFunctionName(path string, oldName string, newName string) error {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	modifiedContent := string(content)
+	modifiedContent = strings.Replace(modifiedContent, oldName, newName, -1)
+	err = os.WriteFile(path, []byte(modifiedContent), 0644)
+	if err != nil {
+		return err
+	}
+	return nil
 }

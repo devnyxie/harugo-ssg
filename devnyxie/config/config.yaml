@@ -15,7 +15,7 @@ user:
 
 # --- Pages start ---
 pages:
-  - name: home
+  - name: Home
     path: /
 # --- Pages end ---
 
