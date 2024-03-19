@@ -7,4 +7,10 @@ const theme = {
 };
 
 // themed version of a Navbar component
-const Navbar = () => {};
+const Navbar = () => {
+  return (
+    <div>
+      <h1>Themed Navbar</h1>
+    </div>
+  );
+};

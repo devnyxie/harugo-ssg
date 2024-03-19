@@ -1,0 +1,22 @@
+# User configuration file
+
+# User information
+name:
+surname:
+
+# Contacts
+email:
+phone:
+
+# Social links
+social:
+  - name: github
+    url:
+  - name: linkedin
+    url:
+  - name: twitter
+    url:
+  - name: facebook
+    url:
+  - name: instagram
+    url:

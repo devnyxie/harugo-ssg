@@ -8,33 +8,23 @@ import (
 	"strings"
 
 	"github.com/pterm/pterm"
+	"gopkg.in/yaml.v2"
 )
 
+// --- main function to initialize the project ---
 func InitializeProject(config *Config) {
-	srcDir := "./foundation"
-	var destDir string
-	if config.ProjectLocation != "." {
-		destDir = filepath.Join(config.ProjectLocation, config.ProjectName)
-	} else {
-		destDir = config.ProjectName
-	}
-
+	srcDir := "./base"
+	destDir := config.ProjectName
 	// - init base structure -
 	copyPasteInitialStructure(config, srcDir, destDir)
 	// - create pages, import & declare components -
-	initPages(config, destDir)
-	// - add website's title and description to the config.yaml -
-	ymlToInsert := fmt.Sprintf("\nsite_title: %s\nsite_description: %s\n", config.ProjectName, config.ProjectName+" website's description.")
-	err := insertContentBetweenComments(destDir+"/config/config.yaml", "# --- Website settings start ---", "# --- Website settings end ---", ymlToInsert, true)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	initPages(config, srcDir, destDir)
+	// - create site_config.yaml -
+	createSiteConfigYaml(config, destDir)
 }
 
+// --- utils ---
 func copyPasteInitialStructure(config *Config, srcDir string, destDir string) {
-	// exceptions := []string{"node_modules", ".next"}                                 to-do: enable before release
-	//lets change exceptions to allowed paths
 	requiredPaths := getRequiredPaths(config)
 
 	err := filepath.Walk(srcDir, func(path string, info os.FileInfo, err error) error {
@@ -115,19 +105,6 @@ func copyFile(src, dst string) error {
 }
 
 func getRequiredPaths(config *Config) []string {
-	// 1. all chosen components paths
-	// 2. if (blog) add _posts path
-	// 3. config folder
-	// 4. public folder
-	// 5. selected theme folder
-	// 6. utils folder
-	// 7. layouts folders
-	// 8. _app.js
-	// 9. defaultStyles folder
-	// 10. package.json, package-lock.json, .gitignore
-	//      "next.config.js", "next.config.mjs", "jsconfig.json"
-	//      "." (root folder)
-	// 11. all files & folders of defaultComponents
 	var allowedPaths = []string{}
 	// 1.
 	for _, Page := range config.Pages {
@@ -141,7 +118,7 @@ func getRequiredPaths(config *Config) []string {
 		}
 	}
 	// 3.
-	allowedPaths = append(allowedPaths, "config", "config/config.yaml")
+	allowedPaths = append(allowedPaths, "config", "config/user_config.yaml")
 	// 4.
 	allowedPaths = append(allowedPaths, "public")
 	// 5.
@@ -161,122 +138,46 @@ func getRequiredPaths(config *Config) []string {
 	return allowedPaths
 }
 
-func insertContentBetweenComments(filePath string, startComment string, endComment string, contentToInsert string, eraseExistingContent bool) error {
-	// Read the file
-	fileContent, err := os.ReadFile(filePath)
-	if err != nil {
-		return fmt.Errorf("failed to read file: %w", err)
-	}
-
-	// Convert to string
-	content := string(fileContent)
-
-	// Find the start and end indices
-	startIndex := strings.Index(content, startComment)
-	endIndex := strings.Index(content, endComment)
-
-	// Check if the start and end comments were found
-	if startIndex == -1 || endIndex == -1 {
-		return fmt.Errorf("start or end comment not found")
-	}
-
-	// Adjust the start index to point to the end of the start comment
-	startIndex += len(startComment)
-
-	if !eraseExistingContent {
-		// Preserve existing content between the comments
-		existingContent := content[startIndex:endIndex]
-		contentToInsert = existingContent + contentToInsert
-	}
-
-	// Insert the content
-	modifiedContent := content[:startIndex] + contentToInsert + content[endIndex:]
-
-	// Write the modified content back to the file
-	err = os.WriteFile(filePath, []byte(modifiedContent), os.ModePerm)
-	if err != nil {
-		return fmt.Errorf("failed to write to file: %w", err)
-	}
-
-	return nil
-}
-
-func initPages(config *Config, destDir string) {
+func initPages(config *Config, srcDir string, destDir string) {
 	sortedPages := sortMapByIndex(config.Pages)
 	for i, pageName := range sortedPages {
 		page := config.Pages[pageName]
-		pageSrcDir := "./foundation/common/Page.jsx"
+		pageSrcDir := srcDir + "/common/Page.js"
 		var pageDestDir string = destDir + "/pages/"
-		var pagePath string
 		if i == 0 {
 			pageDestDir = pageDestDir + "index.js"
-			pagePath = "/"
 		} else {
 			pageDestDir = pageDestDir + strings.ToLower(page.Name) + ".js"
-			pagePath = fmt.Sprintf("/%s", strings.ToLower(page.Name))
 		}
 		copyFile(pageSrcDir, pageDestDir)
 		changeMainFunctionName(pageDestDir, "function Page", "function "+page.Name)
 		for _, component := range page.Components {
-			capitalizedComponentName := strings.ToUpper(component.Name[:1]) + component.Name[1:]
+			// capitalizedComponentName := strings.ToUpper(component.Name[:1]) + component.Name[1:]
 			// 1.
-			componentSrcDir := "./foundation/components/" + component.Name
+			componentSrcDir := srcDir + "/components/" + component.Name
 			// 2.
 			err := filepath.Walk(componentSrcDir, func(path string, info os.FileInfo, err error) error {
+				// exclude base path
+				if path == componentSrcDir {
+					return nil
+				}
+				//
+				fmt.Println("walking over path: ", path)
+				//
 				compPageDestDir := pageDestDir
 				filename := filepath.Base(path)
+				fileNameWithoutExtension := removeFileExtension(filename)
+				fmt.Println("fileNameWithoutExtension: ", fileNameWithoutExtension)
+				JSComponentIdentifier := transformToJSIdentifier(fileNameWithoutExtension)
+				CapitalizedJSComponentIdentifier := strings.ToUpper(JSComponentIdentifier[:1]) + JSComponentIdentifier[1:]
+
 				if err != nil {
 					pterm.Println(pterm.Red(err))
 					os.Exit(1)
 				}
-				if strings.Contains(path, "_component") {
-					// --- 2.1, 2.2, 2.3
-					content, err := os.ReadFile(compPageDestDir)
-					if err != nil {
-						fmt.Println(err)
-						return err
-					}
-					modifiedContent := string(content)
-					htmlToInsertImport := fmt.Sprintf("\n import %s from '@/components/%s/%s'; \n", capitalizedComponentName, component.Name, filename)
-					startIndexImport := strings.Index(modifiedContent, "// IMPORTS START")
-					endIndexImport := strings.Index(modifiedContent, "// IMPORTS END")
-					if startIndexImport != -1 && endIndexImport != -1 {
-						modifiedContent = modifiedContent[:endIndexImport] +
-							htmlToInsertImport +
-							modifiedContent[endIndexImport:]
-					} else {
-						fmt.Println("Start or end comment not found")
-					}
-					// --- 2.4, 2.5, 2.6
-					htmlToInsert := fmt.Sprintf("\n<%s {...props}/>\n", capitalizedComponentName)
-					startIndex := strings.Index(modifiedContent, "{/* CONTENT START */}")
-					endIndex := strings.Index(modifiedContent, "{/* CONTENT END */}")
-					if startIndex != -1 && endIndex != -1 {
-						modifiedContent = modifiedContent[:endIndex] +
-							htmlToInsert +
-							modifiedContent[endIndex:]
-					} else {
-						fmt.Println("Start or end comment not found")
-					}
+				// =--
 
-					err = os.WriteFile(compPageDestDir, []byte(modifiedContent), 0644)
-					if err != nil {
-						return err
-					}
-
-				}
-				if strings.Contains(path, "_api") {
-					//we need to add both import and getStaticProps !!!
-					// part 1:
-					// add import to the page (  )
-
-					// part 2:
-					//  Find the comment // STATIC PROPS START
-					//  Find the comment // STATIC PROPS END
-					//  Add getStaticProps to the page
-					//  Use the file's default exported func in getStaticProps and pass props to the page, and then to the component
-					//
-					// err = copyFile(path, destPath)
+				if strings.Contains(fileNameWithoutExtension, "_api") {
 					content, err := os.ReadFile(pageDestDir)
 					modifiedContent := string(content)
 					funcName := removeFileExtension(filename)
@@ -315,14 +216,58 @@ func initPages(config *Config, destDir string) {
 					if err != nil {
 						return err
 					}
-				}
-				if strings.Contains(path, "_slug") {
-					fileNameWithoutExtension := removeFileExtension(filename)
+				} else if strings.Contains(fileNameWithoutExtension, "_slug") {
 					fileNameWithoutSlug := strings.Replace(fileNameWithoutExtension, "_slug", "", 1)
 					os.MkdirAll(destDir+"/pages/"+strings.ToLower(fileNameWithoutSlug), 0755)
 					_ = copyFile(path, destDir+"/pages/"+strings.ToLower(fileNameWithoutSlug)+"/"+"["+fileNameWithoutSlug+"]"+extractFileExtension(filename))
+				} else {
+					// just components
+					// --- 2.1, 2.2, 2.3
+					content, err := os.ReadFile(compPageDestDir)
+					if err != nil {
+						fmt.Println(err)
+						return err
+					}
+					modifiedContent := string(content)
+					// is component (js, jsx) or a css module etc?
+					isComponent := strings.Contains(filename, ".js") || strings.Contains(filename, ".jsx")
+					// import all files - no harm here
+					var importStatement string
+					if isComponent {
+						importStatement = fmt.Sprintf("\n import %s from '@/components/%s/%s'; \n", CapitalizedJSComponentIdentifier, component.Name, filename)
+					} else if strings.Contains(filename, ".css") {
+						importStatement = fmt.Sprintf("\n import '@/components/%s/%s'; \n", component.Name, filename)
+					}
+					startIndexImport := strings.Index(modifiedContent, "// IMPORTS START")
+					endIndexImport := strings.Index(modifiedContent, "// IMPORTS END")
+					if startIndexImport != -1 && endIndexImport != -1 {
+						modifiedContent = modifiedContent[:endIndexImport] +
+							importStatement +
+							modifiedContent[endIndexImport:]
+					} else {
+						fmt.Println("Start or end comment not found")
+					}
 
+					// --- 2.4, 2.5, 2.6
+					// declarations
+					if isComponent {
+						htmlToInsert := fmt.Sprintf("\n<%s {...props}/>\n", CapitalizedJSComponentIdentifier)
+						startIndexContent := strings.Index(modifiedContent, "{/* CONTENT START */}")
+						endIndexContent := strings.Index(modifiedContent, "{/* CONTENT END */}")
+						if startIndexContent != -1 && endIndexContent != -1 {
+							modifiedContent = modifiedContent[:startIndexContent+len("{/* CONTENT START */}")] +
+								htmlToInsert +
+								modifiedContent[endIndexContent:]
+						} else {
+							fmt.Println("Start or end comment not found")
+						}
+					}
+					err = os.WriteFile(compPageDestDir, []byte(modifiedContent), 0644)
+					if err != nil {
+						return err
+					}
 				}
+
 				return nil
 			})
 			if err != nil {
@@ -335,21 +280,9 @@ func initPages(config *Config, destDir string) {
 				os.Exit(1)
 			}
 		}
-		// add pages to the config.yaml
-		ymlToInsert := fmt.Sprintf("\n  - name: %s\n    path: %s\n", page.Name, pagePath)
-		if i == 0 {
-			ymlToInsert = "\npages:" + ymlToInsert
-		}
-		// insertContentBetweenComments implementation
-		err := insertContentBetweenComments(destDir+"/config/config.yaml", "# --- Pages start ---", "# --- Pages end ---", ymlToInsert, true)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
 	}
 }
 
-// func to change JS file's main function name
 func changeMainFunctionName(path string, oldName string, newName string) error {
 	content, err := os.ReadFile(path)
 	if err != nil {
@@ -362,4 +295,31 @@ func changeMainFunctionName(path string, oldName string, newName string) error {
 		return err
 	}
 	return nil
+}
+
+func createSiteConfigYaml(config *Config, destDir string) {
+	// Marshal the config struct into YAML format
+	ymlBytes, err := yaml.Marshal(config)
+	if err != nil {
+		fmt.Println("Error marshaling YAML:", err)
+		return
+	}
+
+	// Create the file
+	filePath := destDir + "/config/site_config.yaml"
+	file, err := os.Create(filePath)
+	if err != nil {
+		fmt.Println("Error creating file:", err)
+		return
+	}
+	defer file.Close()
+
+	// Write YAML content to file
+	_, err = file.Write(ymlBytes)
+	if err != nil {
+		fmt.Println("Error writing YAML to file:", err)
+		return
+	}
+
+	fmt.Println("Config YAML file created successfully!")
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -31,7 +32,7 @@ func addComponent(config *Config, page Page, targetComponentName string) {
 }
 
 func findAllComponents() ([]Component, error) {
-	var dir string = "./foundation/components"
+	var dir string = "./base/components"
 	var components []Component
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -50,7 +51,7 @@ func findAllComponents() ([]Component, error) {
 }
 
 func findAllThemes() ([]string, error) {
-	var dir string = "./foundation/themes"
+	var dir string = "./base/themes"
 	var themes []string
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -94,14 +95,6 @@ func configToPtermTree(config *Config) pterm.TreeNode {
 	return tree
 }
 
-func stringExistsInSlice(target string, slice []string) bool {
-	for _, s := range slice {
-		if s == target {
-			return true
-		}
-	}
-	return false
-}
 func sortMapByIndex(entity Entity) []string {
 	switch v := entity.(type) {
 	case map[string]Component:
@@ -138,4 +131,16 @@ func removeFileExtension(filename string) string {
 
 func extractFileExtension(filename string) string {
 	return filepath.Ext(filename)
+}
+
+func transformToJSIdentifier(input string) string {
+	// Replace "." with "_"
+	replacer := strings.NewReplacer(".", "_")
+
+	// Replace other special characters with "_"
+	regex := regexp.MustCompile("[^a-zA-Z0-9_]") // Allow only letters, digits, and underscores
+	result := replacer.Replace(input)
+	result = regex.ReplaceAllString(result, "_")
+
+	return result
 }
