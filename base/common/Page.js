@@ -10,5 +10,10 @@ export default function Page(props) {
   );
 }
 
-// STATIC PROPS START
-// STATIC PROPS END
+export async function getStaticProps() {
+  const data = {};
+  // STATIC PROPS START
+
+  // STATIC PROPS END
+  return { props: { ...data } };
+}

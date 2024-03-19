@@ -21,6 +21,8 @@ func InitializeProject(config *Config) {
 	initPages(config, srcDir, destDir)
 	// - create site_config.yaml -
 	createSiteConfigYaml(config, destDir)
+	// - setup theme -
+	setupTheme(config, srcDir, destDir)
 }
 
 // --- utils ---
@@ -118,11 +120,10 @@ func getRequiredPaths(config *Config) []string {
 		}
 	}
 	// 3.
-	allowedPaths = append(allowedPaths, "config", "config/user_config.yaml")
+	allowedPaths = append(allowedPaths, "config")
 	// 4.
 	allowedPaths = append(allowedPaths, "public")
-	// 5.
-	allowedPaths = append(allowedPaths, "themes/"+config.Theme)
+	// 5. theme setup is managed elsewhere
 	// 6.
 	allowedPaths = append(allowedPaths, "utils")
 	// 7.
@@ -198,7 +199,7 @@ func initPages(config *Config, srcDir string, destDir string) {
 					}
 
 					// getStaticProps done
-					htmlToInsert := fmt.Sprintf("\n export async function getStaticProps() { \n const data = await %s(); \n return { props: { %s: data } }; \n } \n", funcName, funcName)
+					htmlToInsert := fmt.Sprintf("\ndata.%s = await %s();\n", funcName, funcName)
 					startIndex := strings.Index(modifiedContent, "// STATIC PROPS START")
 					endIndex := strings.Index(modifiedContent, "// STATIC PROPS END")
 					if startIndex != -1 && endIndex != -1 {
@@ -322,4 +323,97 @@ func createSiteConfigYaml(config *Config, destDir string) {
 	}
 
 	fmt.Println("Config YAML file created successfully!")
+}
+
+func setupTheme(config *Config, srcDir string, destDir string) {
+	// 1. copy theme files
+	// 2. add import statements to _app.js (only for css files)
+	themeDir := srcDir + "/themes/" + config.Theme
+	destThemeDir := destDir + "/theme/" + config.Theme
+	// copy all files from themeDir to destThemeDir
+	err := filepath.Walk(themeDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			pterm.Println(pterm.Red(err))
+			os.Exit(1)
+		}
+		relPath, err := filepath.Rel(themeDir, path)
+		if err != nil {
+			pterm.Println(pterm.Red(err))
+			os.Exit(1)
+		}
+		destPath := filepath.Join(destThemeDir, relPath)
+
+		if info.IsDir() {
+			fmt.Println("Creating directory: " + destPath)
+			err = os.MkdirAll(destPath, info.Mode())
+			if err != nil {
+				pterm.Println(pterm.Red(err))
+				os.Exit(1)
+			}
+		} else {
+			fmt.Println("Copying file from: " + path + " to: " + destPath)
+			err = copyFile(path, destPath)
+			if err != nil {
+				pterm.Println(pterm.Red(err))
+				os.Exit(1)
+			}
+			// add import statements to _app.js
+			if strings.Contains(relPath, ".css") {
+				fmt.Println("Adding css import statement to _app.js")
+				err = insertContentBetweenComments(destDir+"/pages/_app.js", "// THEME IMPORT START", "// THEME IMPORT END", fmt.Sprintf("\n import '@/theme/%s/%s'; \n", config.Theme, relPath), false)
+				if err != nil {
+					pterm.Println(pterm.Red(err))
+					os.Exit(1)
+				}
+			}
+		}
+
+		return nil
+	},
+	)
+	if err != nil {
+		pterm.Println(pterm.Red(err))
+		os.Exit(1)
+	}
+
+}
+
+func insertContentBetweenComments(filePath string, startComment string, endComment string, contentToInsert string, eraseExistingContent bool) error {
+	// Read the file
+	fileContent, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to read file: %w", err)
+	}
+
+	// Convert to string
+	content := string(fileContent)
+
+	// Find the start and end indices
+	startIndex := strings.Index(content, startComment)
+	endIndex := strings.Index(content, endComment)
+
+	// Check if the start and end comments were found
+	if startIndex == -1 || endIndex == -1 {
+		return fmt.Errorf("start or end comment not found")
+	}
+
+	// Adjust the start index to point to the end of the start comment
+	startIndex += len(startComment)
+
+	if !eraseExistingContent {
+		// Preserve existing content between the comments
+		existingContent := content[startIndex:endIndex]
+		contentToInsert = existingContent + contentToInsert
+	}
+
+	// Insert the content
+	modifiedContent := content[:startIndex] + contentToInsert + content[endIndex:]
+
+	// Write the modified content back to the file
+	err = os.WriteFile(filePath, []byte(modifiedContent), os.ModePerm)
+	if err != nil {
+		return fmt.Errorf("failed to write to file: %w", err)
+	}
+
+	return nil
 }

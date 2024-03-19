@@ -72,7 +72,6 @@ func configToPtermTree(config *Config) pterm.TreeNode {
 	tree := pterm.TreeNode{
 		Text: config.ProjectName,
 		Children: []pterm.TreeNode{
-			{Text: fmt.Sprintf("Location: %s", config.ProjectLocation)},
 			{Text: fmt.Sprintf("Theme: %s", config.Theme)},
 		},
 	}

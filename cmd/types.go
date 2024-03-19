@@ -14,8 +14,8 @@ type Page struct {
 type Entity interface{}
 
 type Config struct {
-	ProjectName     string          `yaml:"projectName"`
-	ProjectLocation string          `yaml:"projectLocation"`
-	Theme           string          `yaml:"theme"`
-	Pages           map[string]Page `yaml:"pages"`
+	ProjectName        string          `yaml:"projectName"`
+	ProjectDescription string          `yaml:"projectDescription"`
+	Theme              string          `yaml:"theme"`
+	Pages              map[string]Page `yaml:"pages"`
 }

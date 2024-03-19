@@ -1,3 +1,12 @@
+const Navbar = () => {
+  return (
+    <div>
+      <h1>Themed Navbar</h1>
+    </div>
+  );
+};
+
+// Export theme object
 const theme = {
   dark: true,
   light: true,
@@ -6,11 +15,4 @@ const theme = {
   },
 };
 
-// themed version of a Navbar component
-const Navbar = () => {
-  return (
-    <div>
-      <h1>Themed Navbar</h1>
-    </div>
-  );
-};
+export default theme;
