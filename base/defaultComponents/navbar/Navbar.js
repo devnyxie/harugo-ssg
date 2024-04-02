@@ -2,9 +2,20 @@ import Link from 'next/link';
 import React from 'react';
 import styles from './Navbar.module.css';
 
-function Navbar(props) {
-  const allPages = props.config.pages;
+function Navbar({ site_config }) {
+  // const allPages = site_config.pages;
   // console.log(allPages);
+  const allPages = [];
+  for (var pageKey in site_config.pages) {
+    if (site_config.pages.hasOwnProperty(pageKey)) {
+      console.log(site_config.pages[pageKey].name);
+      allPages.push({
+        name: site_config.pages[pageKey].name,
+        path: site_config.pages[pageKey].path,
+      });
+    }
+  }
+
   return (
     <div className={styles.Navbar}>
       <div className={styles.Navbar__content}>
@@ -14,7 +25,7 @@ function Navbar(props) {
             style={{ alignSelf: 'self-start', textDecoration: 'none' }}
           >
             <h3 style={{ margin: 0, fontWeight: '400' }}>
-              {props.config.site_title}
+              {site_config.projectName}
             </h3>
           </Link>
         </div>
@@ -22,6 +33,7 @@ function Navbar(props) {
           {allPages &&
             allPages.length > 1 &&
             allPages.map((page) => {
+              console.log(page);
               return (
                 <Link
                   key={page.name}

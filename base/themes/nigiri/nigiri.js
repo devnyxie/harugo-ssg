@@ -11,7 +11,7 @@ const theme = {
   dark: true,
   light: true,
   themedComponents: {
-    Navbar: Navbar,
+    // Navbar: Navbar,
   },
 };
 

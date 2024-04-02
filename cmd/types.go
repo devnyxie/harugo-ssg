@@ -8,6 +8,7 @@ type Component struct {
 type Page struct {
 	Index      int                  `yaml:"index"`
 	Name       string               `yaml:"name"`
+	Path       string               `yaml:"path"`
 	Components map[string]Component `yaml:"components"`
 }
 

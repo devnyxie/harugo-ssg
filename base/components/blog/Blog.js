@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { formatDateString } from '../../utils/general';
 import Link from 'next/link';
 import styles from './Blog.module.css';
-import ComponentWrapper from '@/common/ComponentWrapper';
+import ComponentWrapper from '@/defaultComponents/componentWrapper/ComponentWrapper';
+
 function Items({ currentItems, config }) {
   return (
     <>

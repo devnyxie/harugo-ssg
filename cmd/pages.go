@@ -55,9 +55,16 @@ func addPage(config *Config) {
 		pterm.Println(pterm.Red("Page name cannot be empty"))
 		StartCMD(config)
 	}
+	pagePath := strings.ReplaceAll(strings.ToLower(newPageName), " ", "-")
+	if newPageIndex == 0 {
+		pagePath = "/"
+	} else {
+		pagePath = "/" + pagePath
+	}
 	newPage := Page{
 		Index:      newPageIndex,
 		Name:       newPageName,
+		Path:       pagePath,
 		Components: make(map[string]Component),
 	}
 	config.Pages[newPage.Name] = newPage
