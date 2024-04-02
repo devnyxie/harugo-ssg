@@ -14,21 +14,14 @@ const Layout = ({ children, site_config, theme }) => {
   return (
     <>
       <Head>
-        {/* <title>{pageName ? pageName : config.site_title}</title> */}
-        {/* <meta name="description" content={config.site_description} /> */}
+        <title>{pageName ? pageName : config.site_title}</title>
+        <meta name="description" content={config.site_description} />
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <div className={styles.container}>
-        <Navbar
-          site_config={site_config}
-
-          // themedComponent={theme.themedComponents.Navbar}
-        />
+        <Navbar site_config={site_config} />
         <main>{children}</main>
-        <Footer
-          site_config={site_config}
-          // themedComponent={theme.themedComponents.Footer}
-        />
+        <Footer site_config={site_config} />
       </div>
     </>
   );

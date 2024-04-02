@@ -4,7 +4,7 @@ import styles from './Navbar.module.css';
 
 function Navbar(props) {
   const allPages = props.config.pages;
-  console.log(allPages);
+  // console.log(allPages);
   return (
     <div className={styles.Navbar}>
       <div className={styles.Navbar__content}>

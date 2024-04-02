@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { formatDateString } from '../../utils/general';
 import Link from 'next/link';
 import styles from './Blog.module.css';
+import ComponentWrapper from '@/common/ComponentWrapper';
 function Items({ currentItems, config }) {
   return (
     <>
@@ -71,7 +72,7 @@ function PaginatedItems({ itemsPerPage, posts, theme, config }) {
   );
 }
 
-function Blog({ blog_api, theme, config }) {
+function BlogWrapper({ blog_api, theme, config }) {
   return (
     <div className={styles.Blog}>
       <h4 className="underlined_text">
@@ -88,6 +89,14 @@ function Blog({ blog_api, theme, config }) {
         />
       </div>
     </div>
+  );
+}
+
+function Blog({ blog_api, theme, config }) {
+  return (
+    <ComponentWrapper theme={theme} config={config} funcName="blog">
+      <BlogWrapper blog_api={blog_api} theme={theme} config={config} />
+    </ComponentWrapper>
   );
 }
 

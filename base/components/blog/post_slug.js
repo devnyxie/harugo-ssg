@@ -18,20 +18,16 @@ export default function Post({ post }) {
         event.target.tagName === 'A' &&
         event.target.getAttribute('href').startsWith('#')
       ) {
-        console.log('triggered');
         const headingElements = document.querySelectorAll(
           `h1, h2, h3, h4, h5, h6`
         );
-        console.log(event.target.textContent);
-        console.log(headingElements);
+
         const targetHeading = Array.from(headingElements).find(
           (heading) => heading.textContent === event.target.textContent
         );
         // Scroll to the heading if found
-        console.log(targetHeading);
         if (targetHeading) {
           targetHeading.scrollIntoView({ behavior: 'smooth' });
-          console.log('scrolled');
         }
       }
     };
